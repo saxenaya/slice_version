@@ -1,0 +1,9 @@
+torch
+torchvision
+scikit-image
+pillow==6.2.1
+yacs
+tqdm
+tensorboard
+torchsummary
+sklearn~=0.24.2
