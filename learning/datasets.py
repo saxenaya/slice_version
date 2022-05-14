@@ -135,7 +135,11 @@ class AirSimTripletDataset(Dataset):
             self.active_feature_functions = [self.feature_func_clearance,   
                                             self.feature_func_velocity,
                                             self.feature_func_turn_rate]
-
+        # Yash
+        elif feature_function_set_name == "LinearAcceleration":
+            self.class_labels = ['high_lin_acc',
+                                'low_lin_acc']
+            self.active_feature_functions = [feature_func_mean_acc_lin]
         else:
             print("ERROR: Unsupported feature function set: {}".format(feature_function_set_name))
             print("Currently supported feature function set names include (case-sensitive): ",
@@ -307,6 +311,9 @@ class AirSimTripletDataset(Dataset):
                 all_data_counter +=1
 
         print("Dataset Statistics:")
+        print("Saving data_info")
+        np.save("data_info.npy", np.array(self.data_info), allow_pickle=True)
+
         for item in self.label_to_indices.items():
             print("Label {}: {}".format(item[0], len(item[1])))
         print("{} out of {} data points were used.".format(data_counter, all_data_counter))
@@ -938,6 +945,7 @@ class MiniGridTripletDataset(Dataset):
                 all_data_counter +=1
 
         print("Dataset Statistics:")
+        
         for item in self.label_to_indices.items():
             print("Label {}: {}".format(item[0], len(item[1])))
         print("{} out of {} data points were used.".format(data_counter, all_data_counter))
@@ -963,156 +971,172 @@ class MiniGridTripletDataset(Dataset):
 
 
 
-    def __getitem__(self, index):
-        if self.return_img_info:
-            if self.inference_mode:
-                return self.get_item_with_info_inference(index)
+        def __getitem__(self, index):
+            if self.return_img_info:
+                if self.inference_mode:
+                    return self.get_item_with_info_inference(index)
+                else:
+                    return self.get_item_with_info(index)
             else:
-                return self.get_item_with_info(index)
-        else:
-            if self.inference_mode:
-                return self.get_item_default_inference(index)
+                if self.inference_mode:
+                    return self.get_item_default_inference(index)
+                else:
+                    return self.get_item_default(index)
+
+        def get_item_default_inference(self, index):
+            anchor_img = Image.open(self.data_img_path[index])
+            anchor_img_arr = np.asarray(anchor_img, 'float32')
+            anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
+
+            if self.transform_input:
+                anchor_img = self.transform_input(anchor_img)
+                return (anchor_img), []
+                
+            return (anchor_img_arr), []
+
+
+        def get_item_with_info_inference(self, index):
+            info_list = []
+            anchor_img = Image.open(self.data_img_path[index])
+            anchor_img_arr = np.asarray(anchor_img, 'float32')
+            anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
+            info_list.append(self.data_info[index])
+
+            if self.transform_input:
+                high_res_img_set = ()
+                if self.transform_input_secondary:
+                    high_res_img_set = (self.transform_input_secondary(anchor_img))
+                anchor_img = self.transform_input(anchor_img)
+                return (anchor_img), [], info_list, high_res_img_set
+                
+            return (anchor_img_arr), [], info_list
+
+        def get_item_default(self, index):
+            anchor_img = Image.open(self.data_img_path[index])
+            anchor_img_arr = np.asarray(anchor_img, 'float32')
+            anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
+            anchor_label = self.data_label[index]
+
+            positive_index = index
+            while positive_index == index:
+                positive_index = np.random.choice(
+                    self.label_to_indices[anchor_label])
+
+            negative_label = np.random.choice(
+                list(self.labels_set - set([anchor_label])))
+            negative_index = np.random.choice(
+                self.label_to_indices[negative_label])
+
+            positive_img = Image.open(self.data_img_path[positive_index])
+            negative_img = Image.open(self.data_img_path[negative_index])
+            positive_img_arr = np.asarray(positive_img, 'float32')
+            positive_img_arr = positive_img_arr.transpose(2, 0, 1)
+            negative_img_arr = np.asarray(negative_img, 'float32')
+            negative_img_arr = negative_img_arr.transpose(2, 0, 1)
+
+            if self.transform_input:
+                anchor_img = self.transform_input(anchor_img)
+                positive_img = self.transform_input(positive_img)
+                negative_img = self.transform_input(negative_img)
+                return (anchor_img, positive_img, negative_img), []
+                
+            return (anchor_img_arr, positive_img_arr, negative_img_arr), []
+
+        def get_item_with_info(self, index):
+            info_list = []
+            anchor_img = Image.open(self.data_img_path[index])
+            anchor_img_arr = np.asarray(anchor_img, 'float32')
+            anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
+            anchor_label = self.data_label[index]
+            info_list.append(self.data_info[index])
+
+            positive_index = index
+            while positive_index == index:
+                positive_index = np.random.choice(
+                    self.label_to_indices[anchor_label])
+
+            negative_label = np.random.choice(
+                list(self.labels_set - set([anchor_label])))
+            negative_index = np.random.choice(
+                self.label_to_indices[negative_label])
+
+            info_list.append(self.data_info[positive_index])
+            info_list.append(self.data_info[negative_index])
+
+            positive_img = Image.open(self.data_img_path[positive_index])
+            negative_img = Image.open(self.data_img_path[negative_index])
+            positive_img_arr = np.asarray(positive_img, 'float32')
+            positive_img_arr = positive_img_arr.transpose(2, 0, 1)
+            negative_img_arr = np.asarray(negative_img, 'float32')
+            negative_img_arr = negative_img_arr.transpose(2, 0, 1)
+
+            if self.transform_input:
+                high_res_img_set = ()
+                if self.transform_input_secondary:
+                    high_res_img_set = (self.transform_input_secondary(anchor_img),
+                                    self.transform_input_secondary(positive_img),
+                                    self.transform_input_secondary(negative_img))
+                anchor_img = self.transform_input(anchor_img)
+                positive_img = self.transform_input(positive_img)
+                negative_img = self.transform_input(negative_img)
+                return (anchor_img, positive_img, negative_img), [], info_list, high_res_img_set
+                
+            return (anchor_img_arr, positive_img_arr, negative_img_arr), [], info_list
+
+        def get_label(self, data):
+            N = len(self.active_feature_functions)
+            feature_bits = np.full(N, False)
+            skip = False
+
+            i = 0
+            for feature_func in self.active_feature_functions:
+                feature_bits[i], skip = feature_func(data)
+                i += 1
+
+            label_idx = 0
+            for j in range(feature_bits.size):
+                label_idx += feature_bits[j] * ( 2 ** j)
+
+            return self.class_labels[label_idx], skip
+
+        def feature_func_clearance(self, data):
+            value = False
+            skip = False
+
+            # The quantity based on which labeling and finding triplets 
+            # will be done
+            labeling_value = 0.0
+            if self.use_normalized_mean_clearance:
+                labeling_value = data["mean_clearance"] / data["global_plan_mean_clearance"]
             else:
-                return self.get_item_default(index)
-
-    def get_item_default_inference(self, index):
-        anchor_img = Image.open(self.data_img_path[index])
-        anchor_img_arr = np.asarray(anchor_img, 'float32')
-        anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
-
-        if self.transform_input:
-            anchor_img = self.transform_input(anchor_img)
-            return (anchor_img), []
+                labeling_value = data["mean_clearance"]
             
-        return (anchor_img_arr), []
+            if self.only_sample_from_dist_tails and labeling_value < self.clearance_labeling_high_thresh and labeling_value > self.clearance_labeling_low_thresh:
+                skip = True
 
+            if labeling_value > self.clearance_labeling_mid_thresh:
+                value = True
+            else:
+                value = False
 
-    def get_item_with_info_inference(self, index):
-        info_list = []
-        anchor_img = Image.open(self.data_img_path[index])
-        anchor_img_arr = np.asarray(anchor_img, 'float32')
-        anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
-        info_list.append(self.data_info[index])
-
-        if self.transform_input:
-            high_res_img_set = ()
-            if self.transform_input_secondary:
-                high_res_img_set = (self.transform_input_secondary(anchor_img))
-            anchor_img = self.transform_input(anchor_img)
-            return (anchor_img), [], info_list, high_res_img_set
-            
-        return (anchor_img_arr), [], info_list
-
-    def get_item_default(self, index):
-        anchor_img = Image.open(self.data_img_path[index])
-        anchor_img_arr = np.asarray(anchor_img, 'float32')
-        anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
-        anchor_label = self.data_label[index]
-
-        positive_index = index
-        while positive_index == index:
-            positive_index = np.random.choice(
-                self.label_to_indices[anchor_label])
-
-        negative_label = np.random.choice(
-            list(self.labels_set - set([anchor_label])))
-        negative_index = np.random.choice(
-            self.label_to_indices[negative_label])
-
-        positive_img = Image.open(self.data_img_path[positive_index])
-        negative_img = Image.open(self.data_img_path[negative_index])
-        positive_img_arr = np.asarray(positive_img, 'float32')
-        positive_img_arr = positive_img_arr.transpose(2, 0, 1)
-        negative_img_arr = np.asarray(negative_img, 'float32')
-        negative_img_arr = negative_img_arr.transpose(2, 0, 1)
-
-        if self.transform_input:
-            anchor_img = self.transform_input(anchor_img)
-            positive_img = self.transform_input(positive_img)
-            negative_img = self.transform_input(negative_img)
-            return (anchor_img, positive_img, negative_img), []
-            
-        return (anchor_img_arr, positive_img_arr, negative_img_arr), []
-
-    def get_item_with_info(self, index):
-        info_list = []
-        anchor_img = Image.open(self.data_img_path[index])
-        anchor_img_arr = np.asarray(anchor_img, 'float32')
-        anchor_img_arr = anchor_img_arr.transpose(2, 0, 1)
-        anchor_label = self.data_label[index]
-        info_list.append(self.data_info[index])
-
-        positive_index = index
-        while positive_index == index:
-            positive_index = np.random.choice(
-                self.label_to_indices[anchor_label])
-
-        negative_label = np.random.choice(
-            list(self.labels_set - set([anchor_label])))
-        negative_index = np.random.choice(
-            self.label_to_indices[negative_label])
-
-        info_list.append(self.data_info[positive_index])
-        info_list.append(self.data_info[negative_index])
-
-        positive_img = Image.open(self.data_img_path[positive_index])
-        negative_img = Image.open(self.data_img_path[negative_index])
-        positive_img_arr = np.asarray(positive_img, 'float32')
-        positive_img_arr = positive_img_arr.transpose(2, 0, 1)
-        negative_img_arr = np.asarray(negative_img, 'float32')
-        negative_img_arr = negative_img_arr.transpose(2, 0, 1)
-
-        if self.transform_input:
-            high_res_img_set = ()
-            if self.transform_input_secondary:
-                high_res_img_set = (self.transform_input_secondary(anchor_img),
-                                self.transform_input_secondary(positive_img),
-                                self.transform_input_secondary(negative_img))
-            anchor_img = self.transform_input(anchor_img)
-            positive_img = self.transform_input(positive_img)
-            negative_img = self.transform_input(negative_img)
-            return (anchor_img, positive_img, negative_img), [], info_list, high_res_img_set
-            
-        return (anchor_img_arr, positive_img_arr, negative_img_arr), [], info_list
-
-    def get_label(self, data):
-        N = len(self.active_feature_functions)
-        feature_bits = np.full(N, False)
-        skip = False
-
-        i = 0
-        for feature_func in self.active_feature_functions:
-            feature_bits[i], skip = feature_func(data)
-            i += 1
-
-        label_idx = 0
-        for j in range(feature_bits.size):
-            label_idx += feature_bits[j] * ( 2 ** j)
-
-        return self.class_labels[label_idx], skip
-
-    def feature_func_clearance(self, data):
+            return value, skip
+        
+    # Yash
+    def feature_func_mean_acc_lin(self, data):
         value = False
         skip = False
 
-        # The quantity based on which labeling and finding triplets 
-        # will be done
-        labeling_value = 0.0
-        if self.use_normalized_mean_clearance:
-            labeling_value = data["mean_clearance"] / data["global_plan_mean_clearance"]
-        else:
-            labeling_value = data["mean_clearance"]
-        
-        if self.only_sample_from_dist_tails and labeling_value < self.clearance_labeling_high_thresh and labeling_value > self.clearance_labeling_low_thresh:
+        labeling_value = data["mean_acc_lin"]
+        if self.only_sample_from_dist_tails and labeling_value < self.mean_acc_lin_high_thresh and labeling_value > self.mean_acc_lin_low_thresh:
             skip = True
 
-        if labeling_value > self.clearance_labeling_mid_thresh:
+        if labeling_value > self.mean_acc_lin_mid_thresh:
             value = True
         else:
             value = False
 
         return value, skip
-        
+       
 
     def feature_func_velocity(self, data):
         value = False

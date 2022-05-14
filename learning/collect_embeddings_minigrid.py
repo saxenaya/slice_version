@@ -26,7 +26,7 @@ from PIL import Image
 import random
 from datasets import PathPreferenceTripletDataset
 from datasets import MiniGridTripletDataset
-from datasets import AirSimTripletDataset
+from datasets_slice import AirSimTripletDataset
 
 parser.add_argument('--root_dirs', type=str, nargs='+')
 parser.add_argument('--model_dir', type=str)
@@ -56,7 +56,7 @@ else:
     input_img_height = 224 # 224
     input_img_width_highres = 512
     input_img_height_highres = 512
-    crop_center_imgs = True
+    crop_center_imgs = False
     normalize_imgs = True
     use_high_res_network = True
 
@@ -361,6 +361,8 @@ if args.data_format == "minigrid" or args.data_format == "airsim":
                             return_img_info=True,
                             random_state=RANDOM_SEED)
     elif args.data_format == "airsim":
+        print("Dir:", dir_name)
+        print("Session:", session_names)
         triplet_test_dataset = AirSimTripletDataset(dir_name, 
                             session_names, 
                             transform_input=data_transform_input,
@@ -400,12 +402,13 @@ if args.model_dir:
         # clustering = DBSCAN(eps=0.05, min_samples=10).fit(val_embeddings_tl).labels_
         clustering = val_labels_tl
     if VISUALIZE_HIGHRES:
+        print("visualizing embeddings")
         plot_embeddings(embedded, clustering, val_patches_tl_highres, patch_info)
     else:
         plot_embeddings(embedded, clustering, val_patches_tl, patch_info)
-
-else:
-    plt.show()
+plt.show() # ys
+# else:
+#    plt.show()
 
 model_path = os.path.join(args.save_dir, "kmeans.pkl")
 print("Saving clustering model to {}".format(model_path))
