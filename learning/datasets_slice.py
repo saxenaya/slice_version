@@ -315,7 +315,8 @@ class AirSimTripletDataset(Dataset):
                         "turn_rate_change": episode_data_processed["turn_rate_change"],
                         "action_count": episode_data_processed["action_count"],
                         "conditions": episode_data_processed["conditions"],
-                        "episode_id": curr_episode}
+                        "episode_id": curr_episode,
+                        "slice_id": step_data[p1]['slice']}
                     
                     self.data_info.append(curr_data_info)
 
@@ -508,10 +509,6 @@ class AirSimTripletDataset(Dataset):
         }
 
         N = len(step_data)
-        
-        if (N == 1):
-            print("Episode ID:", episode_id)
-            print("Step data:", step_data)
         
         # Calculate the mean velocity
         sum_vel = 0.0
@@ -1565,7 +1562,7 @@ if __name__ == "__main__":
     #     transforms.ToTensor(),
     # ])
     transform_input = transforms.Compose([
-        transforms.CenterCrop(1100),
+        # transforms.CenterCrop(1100),
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
     ])
@@ -1614,7 +1611,7 @@ if __name__ == "__main__":
 
     # Sample a number of data points and store the corresponding images
     # to file for testing the data quality and the data loader pipeline
-    sample_num = 2
+    sample_num = 50
     output_dir = "tmp_output"
     slow_output_path = os.path.join(output_dir, "slow")
     fast_output_path = os.path.join(output_dir, "fast")
@@ -1649,31 +1646,30 @@ if __name__ == "__main__":
         img = sample[0]
         info = sample[2]
         img_conv = transforms.ToPILImage()(img)
-
-        # print(info)
-        
-
-        
-        if info[0]["label"] == "slow":
-            # print("Slow, {}m/s, {}".format(info[0]['mean_velocity'], info[0]['episode_id']))
+        print("LABEL:", info[0]["label"])
+        if "slow" in info[0]["label"]:
+            print("Slow, {}m/s, episode {}, slice {}".format(info[0]['mean_velocity'], info[0]['episode_id'], info[0]['slice_id']))
             img_path = os.path.join(slow_output_path, "{}.png".format(i))
+            print("image path:", img_path)
             img_conv.save(img_path)
-        elif info[0]["label"] == "fast":
-            # print("Fast, {}m/s, {}".format(info[0]['mean_velocity'], info[0]['episode_id']))
+        elif "fast" in info[0]["label"]:
+            print("Fast, {}m/s, episode {}, slice {}".format(info[0]['mean_velocity'], info[0]['episode_id'], info[0]['slice_id']))
             img_path = os.path.join(fast_output_path, "{}.png".format(i))
+            print("image path:", img_path)
             img_conv.save(img_path)
-        elif info[0]["label"] == "low_turn":
+        elif "low_turn" in info[0]["label"]:
             img_path = os.path.join(low_turn_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif info[0]["label"] == "high_turn":
+        elif "high_turn" in info[0]["label"]:
             img_path = os.path.join(high_turn_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif info[0]["label"] == "careless":
+        elif "careless" in info[0]["label"]:
             img_path = os.path.join(careless_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif info[0]["label"] == "cautious":
+        elif "cautious" in info[0]["label"]:
             img_path = os.path.join(cautious_output_path, "{}.png".format(i))
             img_conv.save(img_path)
+        print("")
 
 
         

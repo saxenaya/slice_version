@@ -279,11 +279,13 @@ def extract_embeddings(dataloader, model, embedding_dim=128):
         if model:
             model.eval()
         for data, _, data_info, data_highres in itertools.islice(dataloader,  mini_batch_num):
+            # print("Data:", data_info)
+            # import sys; sys.exit("I'm out!")
             if not type(data) in (tuple, list):
                 data = (data,)
             if cuda:
                 data = tuple(d.cuda() for d in data)
-            
+
             labels[k] = 1
             labels[k+1] = 1
             labels[k+2] = 0
@@ -393,6 +395,8 @@ os.makedirs(args.save_dir, exist_ok=True)
 clustering_model = None
 if args.model_dir:
     if (args.embedding_dim > 2):
+        print("Embeddings:", val_embeddings_tl)
+        import sys; sys.exit("I'm out!")
         print("Clustering the embedding vectors into {} clusters...".format(CLUSTER_NUM))
         clustering_model = KMeans(CLUSTER_NUM, random_state=RANDOM_SEED).fit(val_embeddings_tl)
         clustering = clustering_model.labels_
