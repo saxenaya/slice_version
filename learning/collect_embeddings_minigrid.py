@@ -395,8 +395,6 @@ os.makedirs(args.save_dir, exist_ok=True)
 clustering_model = None
 if args.model_dir:
     if (args.embedding_dim > 2):
-        print("Embeddings:", val_embeddings_tl)
-        import sys; sys.exit("I'm out!")
         print("Clustering the embedding vectors into {} clusters...".format(CLUSTER_NUM))
         clustering_model = KMeans(CLUSTER_NUM, random_state=RANDOM_SEED).fit(val_embeddings_tl)
         clustering = clustering_model.labels_

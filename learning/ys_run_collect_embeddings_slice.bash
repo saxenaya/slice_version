@@ -134,7 +134,7 @@
         # scheduler = lr_scheduler.StepLR(optimizer, 16, gamma=0.1, last_epoch=-1)
         # only_return_successl_traj=False
 MODEL_DIR="./checkpoints"
-EPOCH="99"
+EPOCH="19"
 
 ROOT_DIR=("/robodata/user_data/srabiee/CAML/processed_data_05_06_22")
 SAVE_DIR="./save_dir"

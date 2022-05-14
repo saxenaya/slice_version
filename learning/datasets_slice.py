@@ -223,6 +223,7 @@ class AirSimTripletDataset(Dataset):
 
         data_counter = 0
         all_data_counter = 0
+        self.step_data_bad_counter = 0
         for session in session_list:
             session_dir = os.path.join(root_dir, session)
             # root_dir = /robodata/user_data/srabiee/CAML
@@ -318,6 +319,14 @@ class AirSimTripletDataset(Dataset):
                         "episode_id": curr_episode,
                         "slice_id": step_data[p1]['slice']}
                     
+                    # TODO: change when step_data is fixed
+                    # overriding the step_data based mean velocity with episode_data based mean velocity
+                    a_prev_val = episode_data_processed["mean_velocity"]
+                    a_curr_val = episode_data['slices'][i]['mean_speed']
+                    if (abs(a_prev_val - a_curr_val) / a_prev_val) > 0.5:
+                        self.step_data_bad_counter += 1
+                    curr_data_info['mean_velocity'] = episode_data['slices'][i]['mean_speed']
+
                     self.data_info.append(curr_data_info)
 
                     self.data_label.append(data_label)
@@ -350,6 +359,7 @@ class AirSimTripletDataset(Dataset):
         print("{} out of {} data points were used.".format(data_counter, all_data_counter))
 
         self.compute_feature_func_thresholds()
+        print("number of step_data discrepancies:", self.step_data_bad_counter)
 
     def get_episode_names(self, dir):
         """ 
@@ -1641,7 +1651,6 @@ if __name__ == "__main__":
         exit()
 
     for i in range(sample_num):
-
         sample = triplet_dataset[i]
         img = sample[0]
         info = sample[2]

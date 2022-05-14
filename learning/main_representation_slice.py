@@ -73,7 +73,7 @@ else:
     for traj_id in args.trajectories:
         pref_datasets.append(PathPreferenceTripletDataset(os.path.join(args.root_dir, traj_id)))
     triplet_dataset = torch.utils.data.ConcatDataset(pref_datasets)
-batch_size = 1 # 1024, 10, 100
+batch_size = 16 # 1024, 10, 100
 kwargs = {'num_workers': 16, 'pin_memory': True} if cuda else {}
 train_size = int(len(triplet_dataset) * 0.75)
 train_set, test_set = torch.utils.data.dataset.random_split(triplet_dataset, (train_size, len(triplet_dataset) - train_size))
@@ -98,7 +98,7 @@ loss_fn = TripletLoss(margin)
 lr = 1e-4
 optimizer = optim.Adam(model.parameters(), lr=lr)
 scheduler = lr_scheduler.StepLR(optimizer, 16, gamma=0.1, last_epoch=-1)
-n_epochs = 100 # used to be 400 but it takes too long
+n_epochs = 20 # used to be 400 but it takes too long
 log_interval = 5
 
 if not os.path.exists(args.ckpt_dir):
