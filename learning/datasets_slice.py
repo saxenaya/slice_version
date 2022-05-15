@@ -298,6 +298,15 @@ class AirSimTripletDataset(Dataset):
                     if len(curr_slice) == 1:
                         continue
                     episode_data_processed = self.extract_episode_info(episode_data, curr_slice, curr_episode)
+                    
+                    # TODO: change when step_data is fixed
+                    # overriding the step_data based mean velocity with episode_data based mean velocity
+                    a_prev_val = episode_data_processed["mean_velocity"]
+                    a_curr_val = episode_data['slices'][i]['mean_speed']
+                    if (abs(a_prev_val - a_curr_val) / a_prev_val) > 0.5:
+                        self.step_data_bad_counter += 1
+                    episode_data_processed['mean_velocity'] = episode_data['slices'][i]['mean_speed']
+                    
                     data_label, skip = self.get_label(episode_data, episode_data_processed)
 
                     if skip:
@@ -319,13 +328,7 @@ class AirSimTripletDataset(Dataset):
                         "episode_id": curr_episode,
                         "slice_id": step_data[p1]['slice']}
                     
-                    # TODO: change when step_data is fixed
-                    # overriding the step_data based mean velocity with episode_data based mean velocity
-                    a_prev_val = episode_data_processed["mean_velocity"]
-                    a_curr_val = episode_data['slices'][i]['mean_speed']
-                    if (abs(a_prev_val - a_curr_val) / a_prev_val) > 0.5:
-                        self.step_data_bad_counter += 1
-                    curr_data_info['mean_velocity'] = episode_data['slices'][i]['mean_speed']
+
 
                     self.data_info.append(curr_data_info)
 
@@ -347,8 +350,8 @@ class AirSimTripletDataset(Dataset):
                         continue
                     self.data_img_path.append(os.path.join(self.img_dir, img_name))
                         
-                data_counter += 1
-                all_data_counter +=1
+                    data_counter += 1
+                    all_data_counter +=1
 
         print("Dataset Statistics:")
         print("Saving data_info")
@@ -1557,6 +1560,78 @@ class BalancedBatchSampler(BatchSampler):
     def __len__(self):
         return self.n_dataset // self.batch_size
 
+def inspect_triplets(root_dir, dataset_folders):
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
+    transform_input = transforms.Compose([
+        # transforms.CenterCrop(1100),
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+    ])
+
+    root_dir = root_dir
+    trajectories = [ f for f in dataset_folders]
+
+    triplet_dataset = AirSimTripletDataset(root_dir, trajectories,
+                                             transform_input=transform_input,
+                                             inference_mode=False,
+                                             return_img_info=True,
+                                            only_return_successful_traj=True,
+                                            only_sample_from_dist_tails=True,
+                                            feature_function_set_name="Velocity")
+
+
+    computed_feature_function_thresholds = triplet_dataset.get_computed_feature_function_thresholds()  
+
+    print()
+    print("Computed Feature Function Thresholds: ")
+    print(computed_feature_function_thresholds)
+
+
+    # Sample a number of data points and store the corresponding images
+    # to file for testing the data quality and the data loader pipeline
+    sample_num = 50
+    output_dir = "tmp_output_2"
+
+    
+    anchor_output_path = os.path.join(output_dir, "anchor")
+    positive_output_path = os.path.join(output_dir, "positive")
+    negative_output_path = os.path.join(output_dir, "negative")
+
+    shutil.rmtree(output_dir)
+    os.mkdir(output_dir)
+    os.mkdir(anchor_output_path)
+    os.mkdir(positive_output_path)
+    os.mkdir(negative_output_path)
+
+    for i in range(sample_num):
+        sample = triplet_dataset[i]
+        images = sample[0]
+        infos = sample[2]
+        
+        
+        anchor_img = images[0]
+        positive_img = images[1]
+        negative_img = images[2]
+        
+        anchor_img = transforms.ToPILImage()(anchor_img)
+        positive_img = transforms.ToPILImage()(positive_img)
+        negative_img = transforms.ToPILImage()(negative_img)
+        
+        img_anchor_path = os.path.join(anchor_output_path, "{}_ep{}_sl{}.png".format(i, infos[0]["episode_id"], infos[0]["slice_id"]))
+        img_positive_path = os.path.join(positive_output_path, "{}_ep{}_sl{}.png".format(i, infos[1]["episode_id"], infos[1]["slice_id"]))
+        img_negative_path = os.path.join(negative_output_path, "{}_ep{}_sl{}.png".format(i, infos[2]["episode_id"], infos[2]["slice_id"]))
+        
+        print("{} Labels. Anchor:{}, Positive:{}, Negative:{} ".format(i, infos[0]["label"], infos[1]["label"], infos[2]["label"]))
+        
+        print("Vel. Anchor:{}, Positive:{}, Negative:{} ".format(infos[0]["mean_velocity"], infos[1]["mean_velocity"], infos[2]["mean_velocity"]))
+        
+        anchor_img.save(img_anchor_path)
+        positive_img.save(img_positive_path)
+        negative_img.save(img_negative_path)
+        
+    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -1680,6 +1755,13 @@ if __name__ == "__main__":
             img_conv.save(img_path)
         print("")
 
+
+
+    # Samples a number of triplets and saves them to file for debugging purposes
+    print("****************************************")
+    print("**** Saving Sample Triplets to File ****")
+    print("****************************************")
+    inspect_triplets(args.root_dir, args.dataset_folders)
 
         
         

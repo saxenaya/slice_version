@@ -5,7 +5,7 @@ from torch.autograd import Variable
 from torch import nn
 import os
 from torchvision import transforms
-from torchsummary import summary
+# from torchsummary import summary
 
 import argparse
 parser = argparse.ArgumentParser()

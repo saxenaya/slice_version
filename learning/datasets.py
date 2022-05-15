@@ -312,7 +312,7 @@ class AirSimTripletDataset(Dataset):
 
         print("Dataset Statistics:")
         print("Saving data_info")
-        np.save("data_info.npy", np.array(self.data_info), allow_pickle=True)
+        # np.save("data_info.npy", np.array(self.data_info), allow_pickle=True)
 
         for item in self.label_to_indices.items():
             print("Label {}: {}".format(item[0], len(item[1])))

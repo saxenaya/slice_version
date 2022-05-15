@@ -132,3 +132,4 @@ dmypy.json
 **/*.pyc
 **/*.json
 learning/tmp_output
+learning/tmp_output_2
