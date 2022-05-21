@@ -260,20 +260,20 @@ def extract_embeddings(dataloader, model, embedding_dim=128):
         mini_batch_num = min(mini_batch_num_full, floor(MAX_DATA_SIZE_TO_CLUSTER / batch_size))
         print("Generating embeddings for {} data points out of the available {} in the dataset.".format(mini_batch_num * batch_size, mini_batch_num_full * batch_size))
 
-        embeddings = np.zeros((3 * mini_batch_num , batch_size, embedding_dim))
-        patches = np.zeros((3 * mini_batch_num, batch_size, 3, input_img_height, input_img_width))
-        patches_highres = np.zeros((3 * mini_batch_num, batch_size, 3, input_img_height_highres, input_img_width_highres))
-        labels = np.zeros((3 * mini_batch_num, batch_size))
+        embeddings = np.zeros((int(3 * mini_batch_num) , int(batch_size), int(embedding_dim)))
+        patches = np.zeros((int(3 * mini_batch_num), int(batch_size), 3, int(input_img_height), int(input_img_width)))
+        patches_highres = np.zeros((int(3 * mini_batch_num), int(batch_size), 3, int(input_img_height_highres), int(input_img_width_highres)))
+        labels = np.zeros((int(3 * mini_batch_num), int(batch_size)))
         
-        mean_clearance = np.zeros((3 * mini_batch_num, batch_size))
-        slip_condition = np.zeros((3 * mini_batch_num, batch_size))
-        fog_condition = np.zeros((3 * mini_batch_num, batch_size))
+        mean_clearance = np.zeros((int(3 * mini_batch_num), int(batch_size)))
+        slip_condition = np.zeros((int(3 * mini_batch_num), int(batch_size)))
+        fog_condition = np.zeros((int(3 * mini_batch_num), int(batch_size)))
         # TODO(srabiee): make this more efficient
-        feature_func_labels = np.empty(shape=(3 * mini_batch_num, batch_size), dtype=object)
+        feature_func_labels = np.empty(shape=(int(3 * mini_batch_num), int(batch_size)), dtype=object)
 
         if AIRSIM_Visualization_Mode:
             all_conditions = np.zeros(
-                (len(CONDITIONS_TO_VISUALIZE), 3 * mini_batch_num, batch_size))
+                (len(CONDITIONS_TO_VISUALIZE), int(3 * mini_batch_num), int(batch_size)))
 
         k = 0
         if model:

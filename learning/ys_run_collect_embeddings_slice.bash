@@ -134,13 +134,13 @@
         # scheduler = lr_scheduler.StepLR(optimizer, 16, gamma=0.1, last_epoch=-1)
         # only_return_successl_traj=False
 MODEL_DIR="./checkpoints"
-EPOCH="19"
+EPOCH="14"
 
 ROOT_DIR=("/robodata/user_data/srabiee/CAML/processed_data_05_06_22")
 SAVE_DIR="./save_dir"
 
-CLUSTER_NUM="2"
-FEATURE_FUNCTION_NAME="Velocity"
+CLUSTER_NUM="5"
+FEATURE_FUNCTION_NAME="Clearance_Velocity_LinAcc"
 FEATURE_FUNCTION_THRESH_PATH="./tmp_output/feature_function_thresholds.json"
 DATA_FORMAT="airsim"
 EMBEDDING_DIM="48"
@@ -153,7 +153,7 @@ for path in "${ROOT_DIR[@]}"; do
 done
 
 
-CUDA_VISIBLE_DEVICES=0,1  python collect_embeddings_minigrid.py \
+CUDA_VISIBLE_DEVICES=0,1  python3 collect_embeddings_minigrid.py \
 --root_dirs $ALL_ROOT_DIRS_STR \
 --model_dir $MODEL_DIR \
 --save_dir $SAVE_DIR \

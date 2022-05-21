@@ -29,7 +29,6 @@ class AirSimTripletDataset(Dataset):
                  only_sample_from_dist_tails=True,
                  feature_function_set_name="Clearance",
                  feature_function_thresholds_path=None):
-        print("using my dataset")
         self.root_dir = root_dir
         self.img_dir = ""
         self.info_file_path = ""
@@ -52,6 +51,10 @@ class AirSimTripletDataset(Dataset):
             self.class_labels = ['low_turn',
                                 'high_turn']
             self.active_feature_functions = [self.feature_func_turn_rate]
+        elif feature_function_set_name == "LinAcc":
+            self.class_labels = ['lowLinAcc',
+                                'highLinAcc']
+            self.active_feature_functions = [self.feature_func_lin_acc]
 
         elif feature_function_set_name == "Clearance_Velocity":
             self.class_labels = ['careless_slow',
@@ -137,6 +140,19 @@ class AirSimTripletDataset(Dataset):
             self.active_feature_functions = [self.feature_func_clearance,   
                                             self.feature_func_velocity,
                                             self.feature_func_turn_rate]
+        
+        elif feature_function_set_name == "Clearance_Velocity_LinAcc":
+            self.class_labels = ['careless_slow_lowLinAcc',
+                                'cautious_slow_lowLinAcc',
+                                'careless_fast_lowLinAcc',
+                                'cautious_fast_lowLinAcc',
+                                'careless_slow_highLinAcc',
+                                'cautious_slow_highLinAcc',
+                                'careless_fast_highLinAcc',
+                                'cautious_fast_highLinAcc']
+            self.active_feature_functions = [self.feature_func_clearance,   
+                                            self.feature_func_velocity,
+                                            self.feature_func_lin_acc]
         else:
             print("ERROR: Unsupported feature function set: {}".format(feature_function_set_name))
             print("Currently supported feature function set names include (case-sensitive): ",
@@ -300,12 +316,11 @@ class AirSimTripletDataset(Dataset):
                     episode_data_processed = self.extract_episode_info(episode_data, curr_slice, curr_episode)
                     
                     # TODO: change when step_data is fixed
-                    # overriding the step_data based mean velocity with episode_data based mean velocity
-                    a_prev_val = episode_data_processed["mean_velocity"]
-                    a_curr_val = episode_data['slices'][i]['mean_speed']
-                    if (abs(a_prev_val - a_curr_val) / a_prev_val) > 0.5:
-                        self.step_data_bad_counter += 1
+                    # overriding the step_data based features with episode_data based features
                     episode_data_processed['mean_velocity'] = episode_data['slices'][i]['mean_speed']
+                    episode_data_processed['mean_clearance'] = episode_data['slices'][i]['mean_clearance']
+                    episode_data_processed['normalized_mean_clearance'] = episode_data_processed['mean_clearance']
+                    episode_data_processed['mean_acc_lin'] = episode_data['slices'][i]['mean_acceleration']
                     
                     data_label, skip = self.get_label(episode_data, episode_data_processed)
 
@@ -1736,21 +1751,21 @@ if __name__ == "__main__":
             img_path = os.path.join(slow_output_path, "{}.png".format(i))
             print("image path:", img_path)
             img_conv.save(img_path)
-        elif "fast" in info[0]["label"]:
+        if "fast" in info[0]["label"]:
             print("Fast, {}m/s, episode {}, slice {}".format(info[0]['mean_velocity'], info[0]['episode_id'], info[0]['slice_id']))
             img_path = os.path.join(fast_output_path, "{}.png".format(i))
             print("image path:", img_path)
             img_conv.save(img_path)
-        elif "low_turn" in info[0]["label"]:
+        if "low_turn" in info[0]["label"]:
             img_path = os.path.join(low_turn_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif "high_turn" in info[0]["label"]:
+        if "high_turn" in info[0]["label"]:
             img_path = os.path.join(high_turn_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif "careless" in info[0]["label"]:
+        if "careless" in info[0]["label"]:
             img_path = os.path.join(careless_output_path, "{}.png".format(i))
             img_conv.save(img_path)
-        elif "cautious" in info[0]["label"]:
+        if "cautious" in info[0]["label"]:
             img_path = os.path.join(cautious_output_path, "{}.png".format(i))
             img_conv.save(img_path)
         print("")

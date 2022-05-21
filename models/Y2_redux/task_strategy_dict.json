@@ -1,8 +1,7 @@
 {
-  "0":"Fast_LowTurn_HighAcceleration",
-  "1":"Slow_LowTurn_Smooth",
-  "2":"Slow_HighTurn_HighAcceleration",
-  "3":"Fast_HighTurn_HighAcceleration",
-  "4":"Slow_LowTurn_HighAcceleration",
-  "5":"Slow_LowTurn_HighAngAcceleration"
+  "0":"Slow_HighAcceleration",
+  "1":"Fast_Careless",
+  "2":"Fast_Cautious",
+  "3":"Fast_HighAcceleration",
+  "4":"Slow_LowAcceleration"
 }

@@ -54,11 +54,17 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import random
 from datasets import MiniGridTripletDataset
-from datasets import AirSimTripletDataset
+
 from collections import Counter
 
+slice_mode = True
+if slice_mode:
+    from datasets_slice import AirSimTripletDataset
+else:
+    from datasets import AirSimTripletDataset
+
 use_high_res_network = True
-crop_center_imgs = True
+crop_center_imgs = False
 normalize_imgs = True
 input_img_width = 224
 input_img_height = 224
@@ -84,7 +90,6 @@ def create_strategies_dict():
     for key in keys:
         strategies_dict[key] = []
     return strategies_dict
-
 
 
 def extract_embeddings(dataloader, model, embedding_dim=128):
@@ -131,7 +136,6 @@ def extract_embeddings(dataloader, model, embedding_dim=128):
         mean_clearance = mean_clearance[:k, :]
         slip_condition = slip_condition[:k, :]
 
-
         patch_info = {"mean_clearance": mean_clearance.reshape(k * batch_size),
             "slip_condition": slip_condition.reshape(k * batch_size),
             "fog_condition": fog_condition.reshape(k * batch_size),
@@ -139,6 +143,18 @@ def extract_embeddings(dataloader, model, embedding_dim=128):
             "feature_func_labels": feature_func_labels.reshape(k * batch_size)}
 
     return embeddings.reshape(k * batch_size, embedding_dim), patches.reshape(k * batch_size, 3, input_img_height, input_img_width), patches_highres.reshape(k * batch_size, 3, input_img_height_highres, input_img_width_highres), patch_info
+
+def write_data(meta_data, episode, dir_name, session):
+    # Save the updated meta data to file
+    if slice_mode:
+        output_meta_data_file_path = os.path.join(
+            dir_name, session, str(episode), "processed_data", "episode_data_with_strategy.json")
+    else:
+        output_meta_data_file_path = os.path.join(
+            dir_name, session, "{:05d}".format(episode), "processed_data", "episode_data_with_strategy.json")
+
+    with open(output_meta_data_file_path, "w+") as file:
+        json.dump(meta_data, file, indent=2)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -150,12 +166,18 @@ def main():
     parser.add_argument('--embedding_model_dir', type=str, required=True)
     parser.add_argument('--epoch', type=str, required=True)
     parser.add_argument('--clustering_model_dir', type=str, required=True)
-    parser.add_argument('--save_dir', default='embeddings', type=str, required=True)
+    parser.add_argument('--save_dir', default='embeddings', type=str, required=False)
     parser.add_argument('--embedding_dim', type=int, default=48, required=True)
+    print("Note: task_strategy_dict.json must be in the same directory as the embedding model.")
+
 
     args = parser.parse_args()
 
-    os.makedirs(args.save_dir, exist_ok=True)
+    task_strategy_dict_path = os.path.join(args.embedding_model_dir, "task_strategy_dict.json")
+    with open(task_strategy_dict_path) as f:
+        task_strategy_dict = json.load(f)
+
+    # os.makedirs(args.save_dir, exist_ok=True)
 
     transforms_list = []
     transforms_highres_list = []
@@ -235,49 +257,62 @@ def main():
         print("Predicting task strategies for {}".format(session))
         print(val_embeddings_tl.shape)
         task_strategy_id = clustering_model.predict(val_embeddings_tl)
+        print("Predictions:", task_strategy_id)
+        print("Task strategy shape:", task_strategy_id.shape)
 
         episode_ids = patch_info["episode_id"]
+        print("Episode ID shape:", episode_ids.shape)
 
         print("Writing task strategies to file...")
         # Update the meta data with the predicted task strategies
+        
+        # [1234, 1234, 1234, , ....]
+        # [3, 1, 2, .... ] # slices
+
+        # determine the starting points for each episode in episode_ids
+        episode_start_points = {}
+        for idx, val in enumerate(episode_ids):
+            if val not in episode_start_points:
+                episode_start_points[val] = idx
+
+        prev_episode = -1
         for j in range(len(episode_ids)):
             # Load the episode meta data to update it with the estimated task strategy
             episode = episode_ids[j]
-            meta_data_file_path = os.path.join(
-                dir_name, session, "processed_data",  "{:05d}".format(episode), "episode_data.json")
-            try:
-                file = open(meta_data_file_path, "r")
-                meta_data = json.load(file)
-                file.close()
-                # print("Successfully loaded the meta data file " +
-                #       str(meta_data_file_path))
-            except IOError:
-                print("Error: can\'t find file or read data: "
-                      + meta_data_file_path)
-                exit()
+            new_episode = prev_episode != episode
+            if new_episode:
+                if slice_mode:
+                    meta_data_file_path = os.path.join(
+                        dir_name, session, str(episode), "processed_data", "episode_data.json")
+                else:
+                    meta_data_file_path = os.path.join(
+                        dir_name, session, "{:05d}".format(episode), "processed_data", "episode_data.json")
+                try:
+                    file = open(meta_data_file_path, "r")
+                    meta_data = json.load(file)
+                    file.close()
+                    # print("Successfully loaded the meta data file " +
+                    #       str(meta_data_file_path))
+                except IOError:
+                    print("Error: can\'t find file or read data: "
+                        + meta_data_file_path)
+                    exit()
+                prev_episode = episode
 
             task_strategy = int(task_strategy_id[j])
-            meta_data["task_strategy"] = task_strategy
+            meta_data['slices'][j - episode_start_points[episode]]["task_strategy"] = task_strategy
+            meta_data['slices'][j - episode_start_points[episode]]["ml_strategy"] = task_strategy_dict[str(task_strategy)]
+            
+            # meta_data["task_strategy"] = task_strategy
 
             key = []
             for condition in conditions:
                 if meta_data.get(condition):
                     key.append(condition)
             strategies_dict.get(tuple(key)).append(task_strategy)
-
-            # Save the updated meta data to file
-            output_meta_data_file_path = os.path.join(
-                dir_name, session, "processed_data", "{:05d}".format(episode), "episode_data_with_strategy.json")
-
-            try:
-              file = open(output_meta_data_file_path, "w")
-              json.dump(meta_data, file, indent=2)
-              file.close()
-              # print("Saved the updated meta data including the task strategies to " +
-              #       str(output_meta_data_file_path))
-            except IOError:
-              print("Error: can\'t find file or write data: " + output_meta_data_file_path)
-              exit()
+            
+            if j+1 == len(episode_ids) or episode_ids[j + 1] != episode or not slice_mode:
+                write_data(meta_data, episode, dir_name, session)
 
     # write out strategy counts per conditions combination -- update in ALPACA git repo
     strategy_counts = {}
@@ -286,7 +321,7 @@ def main():
     output_strategy_counts_file_path = os.path.join(dir_name, "strategy_counts.json")
     print("strategy count: {}".format(output_strategy_counts_file_path))
     try:
-        with open(output_strategy_counts_file_path, "w") as f:
+        with open(output_strategy_counts_file_path, "w+") as f:
             f.write(json.dumps(strategy_counts, indent=2))
         # print(f"Saved task strategies count to " + str(output_strategy_counts_file_path))
     except IOError:
