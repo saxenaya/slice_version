@@ -242,30 +242,21 @@ class AirSimTripletDataset(Dataset):
         self.step_data_bad_counter = 0
         for session in session_list:
             session_dir = os.path.join(root_dir, session)
-            # root_dir = /robodata/user_data/srabiee/CAML
-            # session = processed_data_05_06_22
-            print("Session directory: ", session_dir)
             episode_names = self.get_episode_names(session_dir)
-            print("First 10 episode names: ", episode_names[:10])
-            # episode_names = self.get_episode_names(os.path.join(session_dir, "processed_data"))
-            print("ex:", os.path.join(root_dir, session, episode_names[0], "processed_data"))
             
             # tqdm will show progress bar in terminal
             for i in tqdm(range(len(episode_names))):
                 curr_episode = episode_names[i]
                 self.img_dir = os.path.join(root_dir, 
                                             session,
-                                            curr_episode,
-                                            "processed_data")
+                                            curr_episode)
                 self.step_file_path = os.path.join(root_dir,
                             session,
-                            curr_episode,
-                            "processed_data",           
+                            curr_episode,         
                             'step_data.json')
                 self.episode_file_path = os.path.join(root_dir,
                             session,
-                            curr_episode,
-                            "processed_data",           
+                            curr_episode,           
                             'episode_data.json')
 
                 try:
@@ -317,10 +308,10 @@ class AirSimTripletDataset(Dataset):
                     
                     # TODO: change when step_data is fixed
                     # overriding the step_data based features with episode_data based features
-                    episode_data_processed['mean_velocity'] = episode_data['slices'][i]['mean_speed']
-                    episode_data_processed['mean_clearance'] = episode_data['slices'][i]['mean_clearance']
-                    episode_data_processed['normalized_mean_clearance'] = episode_data_processed['mean_clearance']
-                    episode_data_processed['mean_acc_lin'] = episode_data['slices'][i]['mean_acceleration']
+                    # episode_data_processed['mean_velocity'] = episode_data['slices'][i]['mean_speed']
+                    # episode_data_processed['mean_clearance'] = episode_data['slices'][i]['mean_clearance']
+                    # episode_data_processed['normalized_mean_clearance'] = episode_data_processed['mean_clearance']
+                    # episode_data_processed['mean_acc_lin'] = episode_data['slices'][i]['mean_acceleration']
                     
                     data_label, skip = self.get_label(episode_data, episode_data_processed)
 
@@ -1651,7 +1642,7 @@ def inspect_triplets(root_dir, dataset_folders):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_dir', type=str, help="The base directory for the dataset.")
-    parser.add_argument('--dataset_folders', type=str, help="Space separated list of top level folder names for the dataset. Each folder should include two subfolders with the names processed_data and log_files.", nargs='+')
+    parser.add_argument('--dataset_folders', type=str, help="Space separated list of top level folder names for the dataset.", nargs='+')
     args = parser.parse_args()
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],

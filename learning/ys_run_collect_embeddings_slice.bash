@@ -136,11 +136,11 @@
 MODEL_DIR="./checkpoints"
 EPOCH="14"
 
-ROOT_DIR=("/robodata/user_data/srabiee/CAML/processed_data_05_06_22")
+ROOT_DIR=("/robodata/user_data/saxenaya/CAML/ut_data_2450")
 SAVE_DIR="./save_dir"
 
 CLUSTER_NUM="5"
-FEATURE_FUNCTION_NAME="Clearance_Velocity_LinAcc"
+FEATURE_FUNCTION_NAME="Clearance_Velocity_TurnRate"
 FEATURE_FUNCTION_THRESH_PATH="./tmp_output/feature_function_thresholds.json"
 DATA_FORMAT="airsim"
 EMBEDDING_DIM="48"

@@ -148,7 +148,7 @@ def write_data(meta_data, episode, dir_name, session):
     # Save the updated meta data to file
     if slice_mode:
         output_meta_data_file_path = os.path.join(
-            dir_name, session, str(episode), "processed_data", "episode_data_with_strategy.json")
+            dir_name, session, str(episode), "episode_data_with_strategy.json")
     else:
         output_meta_data_file_path = os.path.join(
             dir_name, session, "{:05d}".format(episode), "processed_data", "episode_data_with_strategy.json")
@@ -283,7 +283,7 @@ def main():
             if new_episode:
                 if slice_mode:
                     meta_data_file_path = os.path.join(
-                        dir_name, session, str(episode), "processed_data", "episode_data.json")
+                        dir_name, session, str(episode), "episode_data.json")
                 else:
                     meta_data_file_path = os.path.join(
                         dir_name, session, "{:05d}".format(episode), "processed_data", "episode_data.json")
