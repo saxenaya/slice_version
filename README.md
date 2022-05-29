@@ -14,7 +14,7 @@ pip install -e .
 
 ## Training: Learning Task Strategies 
 
-1) Run the script `datasets.py` to compute and save a set of threshold values for the feature functions given the distribution of data in the training dataset.
+1) Run the script `datasets_slice.py` to compute and save a set of threshold values for the feature functions given the distribution of data in the training dataset.
 ```
 python datasets_slice.py \
 --root_dir <root_dataset_directory>  \
@@ -22,7 +22,7 @@ python datasets_slice.py \
 ```   
 `root_dir` is the base directory for the dataset. `dataset_folders` is a space separated list of top level folder names for the dataset. Each folder should include two subfolders with the names `processed_data` and `log_files`. The computed feature function thresholds will be saved under `tmp_output/feature_function_thresholds.json`. 
 
-2) Run the script `main_representation.py` to learn an embedding function via contrastive learning:
+2) Run the script `main_representation_slice.py` to learn an embedding function via contrastive learning:
 ```
 python main_representation_slice.py \
 --root_dir <root_dataset_directory> \
