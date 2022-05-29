@@ -16,7 +16,7 @@ pip install -e .
 
 1) Run the script `datasets.py` to compute and save a set of threshold values for the feature functions given the distribution of data in the training dataset.
 ```
-python datasets.py \
+python datasets_slice.py \
 --root_dir <root_dataset_directory>  \
 --dataset_folders <session_names>
 ```   
@@ -24,7 +24,7 @@ python datasets.py \
 
 2) Run the script `main_representation.py` to learn an embedding function via contrastive learning:
 ```
-python main_representation.py \
+python main_representation_slice.py \
 --root_dir <root_dataset_directory> \
 --trajectories <session_names> \
 --ckpt_dir <checkpoint_directory> \
