@@ -134,9 +134,9 @@
         # scheduler = lr_scheduler.StepLR(optimizer, 16, gamma=0.1, last_epoch=-1)
         # only_return_successl_traj=False
 MODEL_DIR="./checkpoints"
-EPOCH="14"
+EPOCH="9"
 
-ROOT_DIR=("/robodata/user_data/saxenaya/CAML/ut_data_2450")
+ROOT_DIR=("/robodata/user_data/saxenaya/CAML/ut_data_5_27_22")
 SAVE_DIR="./save_dir"
 
 CLUSTER_NUM="5"

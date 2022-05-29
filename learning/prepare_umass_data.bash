@@ -14,7 +14,7 @@
 
 # QPR Feb 2022
 # SOURCE_DATASET_DIR="/robodata/user_data/srabiee/Projects/CAML/alpaca-core/airsim_data_collection/AirSim_RL_results_4/ut_data_split/test"
-SOURCE_DATASET_DIR="/robodata/user_data/srabiee/Projects/CAML/alpaca-core/airsim_data_collection/AirSim_RL_results_4/ut_data_split/train"
+SOURCE_DATASET_DIR="/robodata/user_data/saxenaya/CAML/ut_data_2450"
 
 # Copy the following list of files from each episode
 FILES_OF_INTEREST=(
@@ -24,11 +24,11 @@ FILES_OF_INTEREST=(
 TARGET_PATH="$SOURCE_DATASET_DIR/umass_data"
 mkdir -p $TARGET_PATH
 
-EPISODES=$( ls "$SOURCE_DATASET_DIR/processed_data/" )
+EPISODES=$( ls "$SOURCE_DATASET_DIR/" )
 
 for episode in $EPISODES; do
   # echo $episode
-  episode_path="$SOURCE_DATASET_DIR/processed_data/$episode"
+  episode_path="$SOURCE_DATASET_DIR/$episode"
 
   target_path=$TARGET_PATH/$episode
   mkdir -p $target_path
@@ -59,7 +59,7 @@ done
 echo "Compressing the results ..."
 pushd $TARGET_PATH/..
 session_name="$(basename -- $SOURCE_DATASET_DIR)"
-zip -r "$session_name.zip" "umass_data"
+zip -r "umass_data.zip" "umass_data"
 popd
 
 
