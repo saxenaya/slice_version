@@ -9,7 +9,7 @@ conda create -n pytorch-env python=3.7.7
 conda activate pytorch-env
 
 cd <path_to>task_strategy_learning
-pip install -e .
+pip install -r requirements.txt
 ```
 
 ## Training: Learning Task Strategies 
